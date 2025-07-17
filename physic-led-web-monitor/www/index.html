@@ -206,15 +206,29 @@
     </style>
 
     <script defer>
-      async function getLedStatus() {
-        const status = await fetch("/status");
-        return status;
+      async function refreshStatus() {
+        try {
+          const resp = await fetch("/status", { cache: "no-store" });
+          if (!resp.ok) return;
+          const text = await resp.text();
+          document.querySelector(".led-status").textContent = text;
+        } catch (_) {
+          /* ignore network errors */
+        }
       }
 
       async function toggle(state) {
-        document.querySelector(".led-status").innerHTML = state;
         await fetch("/led?state=" + state);
+        // reflejamos inmediatamente el cambio; el refresco periódico lo
+        // confirmará después.
+        document.querySelector(".led-status").textContent = state;
       }
+
+      // Consulta el estado cada 500 ms para reflejar cambios hechos con el
+      // pulsador físico u otros clientes.
+      setInterval(refreshStatus, 500);
+      // Actualización inicial tras la carga de la página
+      refreshStatus();
     </script>
   </head>
 

@@ -49,6 +49,15 @@ async def led_ctrl(req):
     led.value(1 if state == 'on' else 0)
     return Response(status_code=204)   # 204 = sin contenido
 
+# Devuelve una cadena "on" o "off" con el estado actual.
+# Esto permite a la página web consultar
+# periódicamente el estado del LED y actualizar la interfaz sin necesidad de
+# recargarla.
+
+@app.route('/status')            # Devuelve "on" | "off"
+async def led_status(req):
+    return Response(body='on' if led.value() else 'off')
+
 async def main():
     ip = network.WLAN(network.AP_IF).ifconfig()[0]
     print('Servidor en  http://%s/' % ip)
