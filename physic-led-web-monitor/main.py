@@ -1,9 +1,39 @@
 import network, machine, uasyncio
 from microdot import Microdot, Response
 
-# --- GPIO ----------------------------------------------------
-LED_PIN = 2                     # Cambia si usas otro pin
+# physical LED controlled by a push-button
+LED_PIN = 16                   # LED conectado al pin 16
+BUTTON_PIN = 15                # Pulsador en el pin 15
+
 led = machine.Pin(LED_PIN, machine.Pin.OUT)
+
+# Configura el pulsador con resistencia de pull-up interna.  El pulsador debe
+# conectar el pin a GND cuando se presione.
+button = machine.Pin(BUTTON_PIN, machine.Pin.IN, machine.Pin.PULL_UP)
+
+try:
+    import micropython
+
+    # Utilizamos micropython.schedule para que la parte pesada se ejecute fuera
+    # de la interrupción, evitando problemas de tiempo en la ISR.
+
+    def _toggle_led(_):
+        led.value(not led.value())
+
+    def _irq_handler(pin):  # noqa: ARG001 – firma impuesta por IRQ
+        micropython.schedule(_toggle_led, 0)
+
+except ImportError:
+    # Cuando el módulo micropython no existe (p. ej. en CPython durante pruebas),
+    # ejecutamos el manejador directamente.
+    def _toggle_led(_):
+        led.value(not led.value())
+
+    def _irq_handler(pin):  # noqa: ARG001
+        _toggle_led(None)
+
+# Registra la interrupción por flanco de bajada (pulsador presionado)
+button.irq(trigger=machine.Pin.IRQ_FALLING, handler=_irq_handler)
 
 # --- App -----------------------------------------------------
 app = Microdot()
