@@ -1,0 +1,22 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="utf-8"/>
+  <title>Control LED ESP32</title>
+  <style>
+    body{font-family:sans-serif;text-align:center;padding-top:2rem}
+    button{padding:1rem 2rem;font-size:1.2rem;margin:0.5rem}
+  </style>
+</head>
+<body>
+  <h1>Control del LED</h1>
+  <button onclick="toggle('on')">Encender</button>
+  <button onclick="toggle('off')">Apagar</button>
+
+  <script>
+    async function toggle(state){
+      await fetch('/led?state='+state);
+    }
+  </script>
+</body>
+</html>
