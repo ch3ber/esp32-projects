@@ -192,119 +192,197 @@ def stop_music():
         print("Música detenida")
 
 # HTML Interface with Camera Controls
-HTML = """<!DOCTYPE html>
-<html>
-<head>
+HTML = """
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Control de Motores y Cámara</title>
     <style>
-        .control-panel { margin: 20px; padding: 15px; background: #f0f0f0; border-radius: 8px; }
-        button { padding: 10px 15px; margin: 5px; border: none; border-radius: 4px; background: #4CAF50; color: white; }
-        button:active { background: #45a049; }
-        .music-control { margin-top: 15px; }
-        .camera-control { margin-top: 15px; }
-        #cameraImage { max-width: 320px; max-height: 240px; margin-top: 10px; border: 1px solid #ddd; }
-        input[type="number"] { padding: 8px; margin: 5px; }
-        #status { margin: 15px; padding: 10px; background: #e7f3fe; border-left: 6px solid #2196F3; }
+/*! tailwindcss v4.1.11 | MIT License | https://tailwindcss.com */@layer properties{@supports (((-webkit-hyphens:none)) and (not (margin-trim:inline))) or ((-moz-orient:inline) and (not (color:rgb(from red r g b)))){*,:before,:after,::backdrop{--tw-border-style:solid;--tw-font-weight:initial;--tw-outline-style:solid}}}@layer theme{:root,:host{--font-sans:ui-sans-serif,system-ui,sans-serif,"Apple Color Emoji","Segoe UI Emoji","Segoe UI Symbol","Noto Color Emoji";--font-mono:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,"Liberation Mono","Courier New",monospace;--color-black:#000;--color-white:#fff;--spacing:.25rem;--text-sm:.875rem;--text-sm--line-height:calc(1.25/.875);--text-base:1rem;--text-base--line-height: 1.5 ;--text-lg:1.125rem;--text-lg--line-height:calc(1.75/1.125);--text-3xl:1.875rem;--text-3xl--line-height: 1.2 ;--font-weight-bold:700;--default-font-family:var(--font-sans);--default-mono-font-family:var(--font-mono)}}@layer base{*,:after,:before,::backdrop{box-sizing:border-box;border:0 solid;margin:0;padding:0}::file-selector-button{box-sizing:border-box;border:0 solid;margin:0;padding:0}html,:host{-webkit-text-size-adjust:100%;tab-size:4;line-height:1.5;font-family:var(--default-font-family,ui-sans-serif,system-ui,sans-serif,"Apple Color Emoji","Segoe UI Emoji","Segoe UI Symbol","Noto Color Emoji");font-feature-settings:var(--default-font-feature-settings,normal);font-variation-settings:var(--default-font-variation-settings,normal);-webkit-tap-highlight-color:transparent}hr{height:0;color:inherit;border-top-width:1px}abbr:where([title]){-webkit-text-decoration:underline dotted;text-decoration:underline dotted}h1,h2,h3,h4,h5,h6{font-size:inherit;font-weight:inherit}a{color:inherit;-webkit-text-decoration:inherit;text-decoration:inherit}b,strong{font-weight:bolder}code,kbd,samp,pre{font-family:var(--default-mono-font-family,ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,"Liberation Mono","Courier New",monospace);font-feature-settings:var(--default-mono-font-feature-settings,normal);font-variation-settings:var(--default-mono-font-variation-settings,normal);font-size:1em}small{font-size:80%}sub,sup{vertical-align:baseline;font-size:75%;line-height:0;position:relative}sub{bottom:-.25em}sup{top:-.5em}table{text-indent:0;border-color:inherit;border-collapse:collapse}:-moz-focusring{outline:auto}progress{vertical-align:baseline}summary{display:list-item}ol,ul,menu{list-style:none}img,svg,video,canvas,audio,iframe,embed,object{vertical-align:middle;display:block}img,video{max-width:100%;height:auto}button,input,select,optgroup,textarea{font:inherit;font-feature-settings:inherit;font-variation-settings:inherit;letter-spacing:inherit;color:inherit;opacity:1;background-color:#0000;border-radius:0}::file-selector-button{font:inherit;font-feature-settings:inherit;font-variation-settings:inherit;letter-spacing:inherit;color:inherit;opacity:1;background-color:#0000;border-radius:0}:where(select:is([multiple],[size])) optgroup{font-weight:bolder}:where(select:is([multiple],[size])) optgroup option{padding-inline-start:20px}::file-selector-button{margin-inline-end:4px}::placeholder{opacity:1}@supports (not ((-webkit-appearance:-apple-pay-button))) or (contain-intrinsic-size:1px){::placeholder{color:currentColor}@supports (color:color-mix(in lab,red,red)){::placeholder{color:color-mix(in oklab,currentcolor 50%,transparent)}}}textarea{resize:vertical}::-webkit-search-decoration{-webkit-appearance:none}::-webkit-date-and-time-value{min-height:1lh;text-align:inherit}::-webkit-datetime-edit{display:inline-flex}::-webkit-datetime-edit-fields-wrapper{padding:0}::-webkit-datetime-edit{padding-block:0}::-webkit-datetime-edit-year-field{padding-block:0}::-webkit-datetime-edit-month-field{padding-block:0}::-webkit-datetime-edit-day-field{padding-block:0}::-webkit-datetime-edit-hour-field{padding-block:0}::-webkit-datetime-edit-minute-field{padding-block:0}::-webkit-datetime-edit-second-field{padding-block:0}::-webkit-datetime-edit-millisecond-field{padding-block:0}::-webkit-datetime-edit-meridiem-field{padding-block:0}:-moz-ui-invalid{box-shadow:none}button,input:where([type=button],[type=reset],[type=submit]){appearance:button}::file-selector-button{appearance:button}::-webkit-inner-spin-button{height:auto}::-webkit-outer-spin-button{height:auto}[hidden]:where(:not([hidden=until-found])){display:none!important}}@layer components;@layer utilities{.mx-auto{margin-inline:auto}.mt-0{margin-top:calc(var(--spacing)*0)}.mt-16{margin-top:calc(var(--spacing)*16)}.mb-4{margin-bottom:calc(var(--spacing)*4)}.flex{display:flex}.w-16{width:calc(var(--spacing)*16)}.w-full{width:100%}.max-w-\[90\%\]{max-width:90%}.max-w-\[645px\]{max-width:645px}.flex-col{flex-direction:column}.items-center{align-items:center}.justify-end{justify-content:flex-end}.gap-1{gap:calc(var(--spacing)*1)}.gap-2\.5{gap:calc(var(--spacing)*2.5)}.gap-4{gap:calc(var(--spacing)*4)}.gap-8{gap:calc(var(--spacing)*8)}.rounded-\[5px\]{border-radius:5px}.border-t-4{border-top-style:var(--tw-border-style);border-top-width:4px}.border-black{border-color:var(--color-black)}.bg-\[\#FF7A05\]{background-color:#ff7a05}.bg-\[\#FFEDD6\]{background-color:#ffedd6}.bg-white{background-color:var(--color-white)}.p-2{padding:calc(var(--spacing)*2)}.p-5{padding:calc(var(--spacing)*5)}.p-8{padding:calc(var(--spacing)*8)}.px-3{padding-inline:calc(var(--spacing)*3)}.px-4{padding-inline:calc(var(--spacing)*4)}.py-2{padding-block:calc(var(--spacing)*2)}.pt-10{padding-top:calc(var(--spacing)*10)}.text-center{text-align:center}.text-3xl{font-size:var(--text-3xl);line-height:var(--tw-leading,var(--text-3xl--line-height))}.text-base{font-size:var(--text-base);line-height:var(--tw-leading,var(--text-base--line-height))}.text-sm{font-size:var(--text-sm);line-height:var(--tw-leading,var(--text-sm--line-height))}.text-\[32px\]{font-size:32px}.font-bold{--tw-font-weight:var(--font-weight-bold);font-weight:var(--font-weight-bold)}.outline-2{outline-style:var(--tw-outline-style);outline-width:2px}.placeholder\:text-black\/50::placeholder{color:#00000080}@supports (color:color-mix(in lab,red,red)){.placeholder\:text-black\/50::placeholder{color:color-mix(in oklab,var(--color-black)50%,transparent)}}@media (min-width:40rem){.sm\:text-lg{font-size:var(--text-lg);line-height:var(--tw-leading,var(--text-lg--line-height))}}}@property --tw-border-style{syntax:"*";inherits:false;initial-value:solid}@property --tw-font-weight{syntax:"*";inherits:false}@property --tw-outline-style{syntax:"*";inherits:false;initial-value:solid}
     </style>
-</head>
-<body>
-    <div class="control-panel">
-        <h2>Motor Paso a Paso</h2>
-        <input type="number" id="motor_steps" min="1" value="200" placeholder="Pasos">
-        <input type="number" id="motor_speed" min="1" max="100" value="10" placeholder="RPM">
-        <button onclick="controlMotor(true)">Mover</button>
-        <button onclick="stopMotor()">Detener</button>
-    </div>
-
-    <div class="control-panel">
-        <h2>Bomba de Agua</h2>
-        <button onclick="controlBomba(true)">Encender Bomba</button>
-        <button onclick="controlBomba(false)">Apagar Bomba</button>
-    </div>
-
-    <div class="control-panel music-control">
-        <h2>Reproducción Musical</h2>
-        <button onclick="playMusic('mozart')">Mozart</button>
-        <button onclick="playMusic('beethoven')">Beethoven</button>
-        <button onclick="stopMusic()">Detener Música</button>
-    </div>
-
-    <div class="control-panel camera-control">
-        <h2>Cámara ESP32</h2>
-        <button onclick="getCameraImage()">Actualizar Imagen</button>
+  </head>
+  <body class="bg-[#FFEDD6]">
+    <main
+      class="w-full mx-auto pt-10 max-w-[90%] flex flex-col gap-8 items-center"
+    >
+      <header class="flex flex-col gap-4 text-center">
+        <h1 class="text-3xl font-bold p-2">Monitorea tu comedesp32</h1>
+        <p class="mt-0 mb-4 sm:text-lg text-base font-base text-foreground">
+          Comedesp32 es el comedero para mascotas impulsado por el poder
+          conjunto de c++, Python y el esp32.
+        </p>
+      </header>
+      <section
+        class="w-full max-w-[645px] bg-white rounded-[5px] p-8 outline-2 flex flex-col gap-4"
+      >
+        <h2 class="text-3xl font-bold">Comida</h2>
         <div>
-            <img id="cameraImage" src="" alt="Imagen de la cámara">
+          <p>Selecciona el horario para dispensar la comida de tu mascota.</p>
+          <p>
+            El horario actual es a las
+            <span class="font-bold">16:00</span> horas
+          </p>
         </div>
-    </div>
-
-    <div id="status">Esperando comandos...</div>
-
+        <div>
+          <p class="font-bold text-sm">Horario (hh:mm:ss)</p>
+          <div class="flex gap-1 items-center">
+            <input
+              type="number"
+              min="0"
+              max="24"
+              class="outline-2 rounded-[5px] placeholder:text-black/50 py-2 px-3 w-16"
+              placeholder="15"
+            />
+            <p class="font-bold text-[32px]">:</p>
+            <input
+              type="number"
+              min="0"
+              max="60"
+              class="outline-2 rounded-[5px] placeholder:text-black/50 py-2 px-3 w-16"
+              placeholder="30"
+            />
+            <p class="font-bold text-[32px]">:</p>
+            <input
+              type="number"
+              min="0"
+              max="60"
+              class="outline-2 rounded-[5px] placeholder:text-black/50 py-2 px-3 w-16"
+              placeholder="00"
+            />
+          </div>
+        </div>
+        <div class="w-full flex justify-end gap-2.5">
+          <button class="outline-2 rounded-[5px] py-2 px-4">Borrar</button>
+          <button class="outline-2 rounded-[5px] py-2 px-4 bg-[#FF7A05]">
+            Guardar cambios
+          </button>
+        </div>
+      </section>
+      <section
+        class="w-full max-w-[645px] bg-white rounded-[5px] p-8 outline-2 flex flex-col gap-4"
+      >
+        <h2 class="text-3xl font-bold">Agua</h2>
+        <div>
+          <p>Selecciona el horario para dispensar agua a tu mascota.</p>
+          <p>
+            El horario actual es a las
+            <span class="font-bold">16:00</span> horas
+          </p>
+        </div>
+        <div>
+          <p class="font-bold text-sm">Horario (hh:mm:ss)</p>
+          <div class="flex gap-1 items-center">
+            <input
+              type="number"
+              min="0"
+              max="24"
+              class="outline-2 rounded-[5px] placeholder:text-black/50 py-2 px-3 w-16"
+              placeholder="15"
+            />
+            <p class="font-bold text-[32px]">:</p>
+            <input
+              type="number"
+              min="0"
+              max="60"
+              class="outline-2 rounded-[5px] placeholder:text-black/50 py-2 px-3 w-16"
+              placeholder="30"
+            />
+            <p class="font-bold text-[32px]">:</p>
+            <input
+              type="number"
+              min="0"
+              max="60"
+              class="outline-2 rounded-[5px] placeholder:text-black/50 py-2 px-3 w-16"
+              placeholder="00"
+            />
+          </div>
+        </div>
+        <div class="w-full flex justify-end gap-2.5">
+          <button class="outline-2 rounded-[5px] py-2 px-4">Borrar</button>
+          <button class="outline-2 rounded-[5px] py-2 px-4 bg-[#FF7A05]">
+            Guardar cambios
+          </button>
+        </div>
+      </section>
+    </main>
+    <footer class="mt-16 border-t-4 border-black p-5 bg-white text-center">
+      <p>
+        Develop by
+        <a class="font-bold" href="https://github.com/ch3ber">@ch3ber</a> and
+        <a class="font-bold" href="https://github.com/j1leo">@j1eo</a> under MIT
+        License.
+      </p>
+    </footer>
     <script>
-        async function sendCommand(cmd) {
-            const status = document.getElementById('status');
-            status.textContent = "Enviando...";
-            
-            try {
-                const response = await fetch('/control', {
-                    method: 'POST',
-                    headers: {'Content-Type': 'application/json'},
-                    body: JSON.stringify({command: cmd})
-                });
-                const result = await response.json();
-                status.textContent = result.message;
-            } catch(e) {
-                status.textContent = "Error: " + e.message;
-            }
-        }
+      async function sendCommand(cmd) {
+        const status = document.getElementById("status");
+        status.textContent = "Enviando...";
 
-        async function getCameraImage() {
-            const status = document.getElementById('status');
-            const imgElement = document.getElementById('cameraImage');
-            
-            status.textContent = "Obteniendo imagen de la cámara...";
-            try {
-                const response = await fetch('/get_image');
-                if (response.ok) {
-                    const blob = await response.blob();
-                    imgElement.src = URL.createObjectURL(blob);
-                    status.textContent = "Imagen actualizada: " + new Date().toLocaleTimeString();
-                } else {
-                    status.textContent = "Error al obtener imagen";
-                }
-            } catch(e) {
-                status.textContent = "Error: " + e.message;
-            }
+        try {
+          const response = await fetch("/control", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ command: cmd }),
+          });
+          const result = await response.json();
+          status.textContent = result.message;
+        } catch (e) {
+          status.textContent = "Error: " + e.message;
         }
+      }
 
-        function controlMotor() {
-            const steps = document.getElementById('motor_steps').value;
-            const speed = document.getElementById('motor_speed').value;
-            sendCommand(`motor:${steps}:${speed}:1`);
-        }
+      async function getCameraImage() {
+        const status = document.getElementById("status");
+        const imgElement = document.getElementById("cameraImage");
 
-        function stopMotor() {
-            sendCommand('motorStop');
+        status.textContent = "Obteniendo imagen de la cámara...";
+        try {
+          const response = await fetch("/get_image");
+          if (response.ok) {
+            const blob = await response.blob();
+            imgElement.src = URL.createObjectURL(blob);
+            status.textContent =
+              "Imagen actualizada: " + new Date().toLocaleTimeString();
+          } else {
+            status.textContent = "Error al obtener imagen";
+          }
+        } catch (e) {
+          status.textContent = "Error: " + e.message;
         }
+      }
 
-        function controlBomba(state) {
-            sendCommand(state ? 'bombaOn' : 'bombaOff');
-        }
+      function controlMotor() {
+        const steps = document.getElementById("motor_steps").value;
+        const speed = document.getElementById("motor_speed").value;
+        sendCommand(`motor:${steps}:${speed}:1`);
+      }
 
-        function playMusic(composer) {
-            sendCommand(`playMusic:${composer}`);
-        }
+      function stopMotor() {
+        sendCommand("motorStop");
+      }
 
-        function stopMusic() {
-            sendCommand('stopMusic');
-        }
-        
-        // Auto-refresh image every 5 seconds
-        setInterval(getCameraImage, 5000);
-        // Get first image on page load
-        window.onload = getCameraImage;
+      function controlBomba(state) {
+        sendCommand(state ? "bombaOn" : "bombaOff");
+      }
+
+      function playMusic(composer) {
+        sendCommand(`playMusic:${composer}`);
+      }
+
+      function stopMusic() {
+        sendCommand("stopMusic");
+      }
+
+      // Auto-refresh image every 5 seconds
+      setInterval(getCameraImage, 5000);
+      // Get first image on page load
+      window.onload = getCameraImage;
     </script>
-</body>
-</html>"""
+  </body>
+</html>
+"""
 
 # Servidor Web
 s = socket.socket()
