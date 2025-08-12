@@ -1,0 +1,163 @@
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="utf-8" />
+    <title>Control LED ESP32 + Medición</title>
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <style>
+      :root {
+        --color-bg: #77bef0;
+        --color-secondary: #ffcb61;
+        --color-terceary: #ff894f;
+        --color-accents: #ea5b6f;
+        --color-text: #111;
+      }
+      * {
+        box-sizing: border-box;
+      }
+      body {
+        font-family: Arial, Helvetica, sans-serif;
+        background-color: var(--color-bg);
+        color: var(--color-text);
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        min-height: 100dvh;
+        padding: 1rem;
+      }
+      main {
+        width: 100%;
+        max-width: 720px;
+        background: #fff8;
+        backdrop-filter: blur(4px);
+        border-radius: 16px;
+        padding: 24px;
+        box-shadow: 0 10px 20px #0002;
+      }
+      h1 {
+        font-weight: bold;
+        font-size: 28px;
+        margin-bottom: 12px;
+        text-align: center;
+      }
+      p {
+        margin: 6px 0;
+      }
+      .grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 12px;
+      }
+      .card {
+        background: #fff;
+        border-radius: 12px;
+        padding: 14px;
+        box-shadow: 0 4px 10px #0001;
+      }
+      .btns {
+        display: flex;
+        gap: 8px;
+        flex-wrap: wrap;
+        margin-top: 8px;
+      }
+      button {
+        background-color: var(--color-secondary);
+        border: none;
+        border-radius: 999px;
+        padding: 0.7rem 1.2rem;
+        font-size: 1rem;
+        cursor: pointer;
+      }
+      .monos {
+        font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+      }
+      .big {
+        font-size: 22px;
+        font-weight: bold;
+      }
+      .small {
+        opacity: 0.8;
+        font-size: 0.9rem;
+      }
+    </style>
+    <script defer>
+      async function refreshStatus() {
+        try {
+          const resp = await fetch("/status", { cache: "no-store" });
+          if (!resp.ok) return;
+          const text = await resp.text();
+          document.querySelector(".led-status").textContent =
+            text.toUpperCase();
+        } catch (_) {}
+      }
+
+      async function toggle(state) {
+        try {
+          await fetch("/led?state=" + state);
+        } catch (_) {}
+        document.querySelector(".led-status").textContent = state.toUpperCase();
+      }
+
+      async function refreshMetrics() {
+        try {
+          const r = await fetch("/metrics", { cache: "no-store" });
+          if (!r.ok) return;
+          const j = await r.json();
+          document.querySelector("#voltage").textContent = j.voltage.toFixed(3);
+          document.querySelector("#current").textContent = j.current.toFixed(3);
+        } catch (_) {}
+      }
+
+      async function calibrateACS() {
+        try {
+          const r = await fetch("/calibrate", { method: "POST" });
+          if (!r.ok) return;
+          // opcional: podrías leer el zero para depuración
+          await refreshMetrics();
+        } catch (_) {}
+      }
+
+      // Pull inicial + bucles
+      addEventListener("load", () => {
+        refreshStatus();
+        refreshMetrics();
+        setInterval(refreshStatus, 700);
+        setInterval(refreshMetrics, 700);
+        document.querySelector("#btn-on").onclick = () => toggle("on");
+        document.querySelector("#btn-off").onclick = () => toggle("off");
+        document.querySelector("#btn-cal").onclick = calibrateACS;
+      });
+    </script>
+  </head>
+
+  <body>
+    <main>
+      <h1>Control de LED y Medición</h1>
+
+      <div class="grid">
+        <section class="card">
+          <p>LED: <span class="led-status monos big"></span></p>
+          <div class="btns">
+            <button id="btn-on">Encender</button>
+            <button id="btn-off">Apagar</button>
+          </div>
+          <p class="small">
+            El estado también puede cambiar con el pulsador físico.
+          </p>
+        </section>
+
+        <section class="card">
+          <p>Voltaje: <span id="voltage" class="monos big">0.000</span> V</p>
+          <p>Corriente: <span id="current" class="monos big">0.000</span> A</p>
+          <div class="btns">
+            <button id="btn-cal">Calibrar ACS712 (cero)</button>
+          </div>
+          <p class="small">
+            Calibra con <strong>0 A</strong> (sin carga) para fijar el punto
+            medio del ACS712.
+          </p>
+        </section>
+      </div>
+    </main>
+  </body>
+</html>
