@@ -1,0 +1,108 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>ESP32 Pot</title>
+    <style>
+      body {
+        font-family: sans-serif;
+        margin: 16px;
+      }
+      #row {
+        display: flex;
+        gap: 12px;
+        align-items: center;
+        flex-wrap: wrap;
+      }
+      canvas {
+        border: 1px solid #ccc;
+        width: 100%;
+        max-width: 900px;
+        height: 300px;
+      }
+      .box {
+        padding: 8px 10px;
+        border: 1px solid #ddd;
+        border-radius: 8px;
+      }
+    </style>
+  </head>
+  <body>
+    <h2>Potenciómetro B10K (ESP32)</h2>
+
+    <div id="row">
+      <div class="box">raw: <b id="raw">-</b></div>
+      <div class="box">volts: <b id="volts">-</b> V</div>
+      <div class="box">resistencia: <b id="ohms">-</b> Ω</div>
+    </div>
+
+    <p></p>
+    <canvas id="cv" width="900" height="300"></canvas>
+
+    <script>
+      const cv = document.getElementById("cv");
+      const ctx = cv.getContext("2d");
+
+      const rawEl = document.getElementById("raw");
+      const voltsEl = document.getElementById("volts");
+      const ohmsEl = document.getElementById("ohms");
+
+      const MAX = 4095;
+      const VREF = 3.3;
+      const POT_TOTAL = 10000; // B10K
+
+      const N = 120;
+      const data = Array(N).fill(0);
+
+      function draw() {
+        ctx.clearRect(0, 0, cv.width, cv.height);
+
+        ctx.globalAlpha = 0.2;
+        for (let i = 0; i <= 10; i++) {
+          const y = (cv.height * i) / 10;
+          ctx.beginPath();
+          ctx.moveTo(0, y);
+          ctx.lineTo(cv.width, y);
+          ctx.stroke();
+        }
+        ctx.globalAlpha = 1.0;
+
+        ctx.beginPath();
+        for (let i = 0; i < N; i++) {
+          const x = (cv.width * i) / (N - 1);
+          const y = cv.height - (data[i] / MAX) * cv.height;
+          if (i === 0) ctx.moveTo(x, y);
+          else ctx.lineTo(x, y);
+        }
+        ctx.stroke();
+      }
+
+      function calcOhms(volts) {
+        // R2 = (Vout / Vin) * 10k
+        return (volts / VREF) * POT_TOTAL;
+      }
+
+      async function tick() {
+        try {
+          const r = await fetch("/metrics", { cache: "no-store" });
+          const j = await r.json();
+
+          rawEl.textContent = j.raw;
+          voltsEl.textContent = j.volts.toFixed(3);
+
+          const ohms = calcOhms(j.volts);
+          ohmsEl.textContent = ohms.toFixed(0);
+
+          data.push(j.raw);
+          data.shift();
+
+          draw();
+        } catch (e) {}
+      }
+
+      draw();
+      setInterval(tick, 10);
+    </script>
+  </body>
+</html>
