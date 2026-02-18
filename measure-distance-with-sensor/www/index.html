@@ -1,168 +1,128 @@
 <!doctype html>
-<html>
+<html lang="es">
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width,initial-scale=1" />
     <title>ESP32 + HC-SR04</title>
     <style>
+      :root {
+        --bg: #f6f8fb;
+        --card: #fff;
+        --ink: #1f2937;
+        --muted: #667085;
+        --line: #d7deea;
+        --a: #0f6ea9;
+        --b: #e76f51;
+        --ok: #1f9d6a;
+        --bad: #b42318;
+      }
+      * { box-sizing: border-box; }
       body {
-        font-family: sans-serif;
-        margin: 16px;
+        margin: 0;
+        font: 15px/1.35 Verdana, sans-serif;
+        color: var(--ink);
+        background: linear-gradient(170deg, #eef5ff, var(--bg) 35%);
       }
-      #row {
-        display: flex;
-        gap: 12px;
-        align-items: center;
-        flex-wrap: wrap;
+      main { max-width: 880px; margin: 0 auto; padding: 14px; }
+      h1 {
+        margin: 0 0 10px;
+        font: 700 19px/1.2 Georgia, serif;
+        letter-spacing: .02em;
       }
-      .box {
-        padding: 8px 10px;
-        border: 1px solid #ddd;
-        border-radius: 8px;
+      .stats {
+        display: grid;
+        gap: 8px;
+        grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
       }
-      canvas {
-        border: 1px solid #ccc;
-        width: 100%;
-        max-width: 960px;
-        height: 320px;
+      .box, .chart {
+        border: 1px solid var(--line);
+        border-radius: 10px;
+        background: var(--card);
       }
+      .box { padding: 8px 10px; }
+      .k {
+        margin: 0;
+        color: var(--muted);
+        font-size: 11px;
+        letter-spacing: .06em;
+        text-transform: uppercase;
+      }
+      .v { margin: 3px 0 0; font-size: 18px; font-weight: 700; }
+      #status.ok { color: var(--ok); }
+      #status.bad { color: var(--bad); }
+      .chart { margin-top: 8px; padding: 8px; }
+      #cv { display: block; width: 100%; height: 260px; }
     </style>
   </head>
   <body>
-    <h2>Distancia con HC-SR04 (ESP32)</h2>
-
-    <div id="row">
-      <div class="box">distancia: <b id="distance">-</b> cm</div>
-      <div class="box">linealidad (R²): <b id="r2">-</b></div>
-      <div class="box">estado: <b id="status">-</b></div>
-    </div>
-
-    <p></p>
-    <canvas id="cv" width="960" height="320"></canvas>
-
+    <main>
+      <h1>Distancia HC-SR04</h1>
+      <section class="stats">
+        <article class="box"><p class="k">Distancia</p><p class="v"><span id="distance">-</span> cm</p></article>
+        <article class="box"><p class="k">Linealidad R²</p><p class="v" id="r2">-</p></article>
+        <article class="box"><p class="k">Estado</p><p class="v" id="status">-</p></article>
+      </section>
+      <section class="chart"><canvas id="cv"></canvas></section>
+    </main>
     <script>
-      const cv = document.getElementById("cv");
-      const ctx = cv.getContext("2d");
+      const cv = document.getElementById("cv"), c = cv.getContext("2d");
+      const eDist = document.getElementById("distance"), eR2 = document.getElementById("r2"), eSt = document.getElementById("status");
+      const MAX = 72, data = []; let busy = 0;
 
-      const distanceEl = document.getElementById("distance");
-      const r2El = document.getElementById("r2");
-      const statusEl = document.getElementById("status");
+      function resize() {
+        const dpr = window.devicePixelRatio > 1 ? 2 : 1;
+        const w = cv.clientWidth | 0, h = cv.clientHeight | 0;
+        cv.width = w * dpr; cv.height = h * dpr; c.setTransform(dpr, 0, 0, dpr, 0, 0);
+      }
 
-      const N = 90;
-      const data = [];
-
-      function fitLineR2(values) {
-        const n = values.length;
-        if (n < 3) return { slope: 0, intercept: 0, r2: 0 };
-
-        let sumX = 0,
-          sumY = 0,
-          sumXY = 0,
-          sumX2 = 0;
-        for (let i = 0; i < n; i++) {
-          const x = i;
-          const y = values[i];
-          sumX += x;
-          sumY += y;
-          sumXY += x * y;
-          sumX2 += x * x;
-        }
-
-        const denom = n * sumX2 - sumX * sumX;
-        const slope = denom === 0 ? 0 : (n * sumXY - sumX * sumY) / denom;
-        const intercept = (sumY - slope * sumX) / n;
-
-        const meanY = sumY / n;
-        let ssRes = 0,
-          ssTot = 0;
-        for (let i = 0; i < n; i++) {
-          const y = values[i];
-          const yHat = slope * i + intercept;
-          ssRes += (y - yHat) * (y - yHat);
-          ssTot += (y - meanY) * (y - meanY);
-        }
-
-        const r2 = ssTot === 0 ? 1 : 1 - ssRes / ssTot;
-        return { slope, intercept, r2 };
+      function fitR2(v) {
+        const n = v.length; if (n < 3) return { m: 0, b: 0, r2: 0 };
+        let sx = 0, sy = 0, sxy = 0, sx2 = 0;
+        for (let i = 0; i < n; i++) { const y = v[i]; sx += i; sy += y; sxy += i * y; sx2 += i * i; }
+        const d = n * sx2 - sx * sx, m = d ? (n * sxy - sx * sy) / d : 0, b = (sy - m * sx) / n;
+        const my = sy / n; let sr = 0, st = 0;
+        for (let i = 0; i < n; i++) { const y = v[i], er = y - (m * i + b), et = y - my; sr += er * er; st += et * et; }
+        return { m, b, r2: st ? 1 - sr / st : 1 };
       }
 
       function draw() {
-        ctx.clearRect(0, 0, cv.width, cv.height);
+        const w = cv.clientWidth, h = cv.clientHeight; c.clearRect(0, 0, w, h); if (!data.length) return;
+        let lo = data[0], hi = data[0];
+        for (let i = 1; i < data.length; i++) { const y = data[i]; if (y < lo) lo = y; if (y > hi) hi = y; }
+        const pad = Math.max(3, (hi - lo) * .18), y0 = lo - pad, den = hi + pad - y0 || 1, dx = Math.max(1, data.length - 1);
+        const ypx = (y) => h - ((y - y0) / den) * h;
 
-        if (data.length === 0) return;
+        c.strokeStyle = "rgba(29,53,87,.15)"; c.lineWidth = 1;
+        for (let i = 0; i < 6; i++) { const gy = (h * i) / 5; c.beginPath(); c.moveTo(0, gy); c.lineTo(w, gy); c.stroke(); }
 
-        const minY = Math.min(...data);
-        const maxY = Math.max(...data);
-        const pad = Math.max(3, (maxY - minY) * 0.15);
-        const y0 = minY - pad;
-        const y1 = maxY + pad;
+        c.strokeStyle = "#0f6ea9"; c.lineWidth = 2.2; c.beginPath();
+        for (let i = 0; i < data.length; i++) { const x = (w * i) / dx, y = ypx(data[i]); i ? c.lineTo(x, y) : c.moveTo(x, y); }
+        c.stroke();
 
-        const yToPx = (y) => {
-          if (y1 === y0) return cv.height / 2;
-          return cv.height - ((y - y0) / (y1 - y0)) * cv.height;
-        };
-
-        ctx.globalAlpha = 0.25;
-        for (let i = 0; i <= 8; i++) {
-          const y = (cv.height * i) / 8;
-          ctx.beginPath();
-          ctx.moveTo(0, y);
-          ctx.lineTo(cv.width, y);
-          ctx.stroke();
-        }
-        ctx.globalAlpha = 1;
-
-        ctx.strokeStyle = "#0a66c2";
-        ctx.lineWidth = 2;
-        ctx.beginPath();
-        for (let i = 0; i < data.length; i++) {
-          const x = (cv.width * i) / Math.max(1, data.length - 1);
-          const y = yToPx(data[i]);
-          if (i === 0) ctx.moveTo(x, y);
-          else ctx.lineTo(x, y);
-        }
-        ctx.stroke();
-
-        const fit = fitLineR2(data);
-        ctx.strokeStyle = "#e67e22";
-        ctx.lineWidth = 1.5;
-        ctx.beginPath();
-        for (let i = 0; i < data.length; i++) {
-          const x = (cv.width * i) / Math.max(1, data.length - 1);
-          const yHat = fit.slope * i + fit.intercept;
-          const y = yToPx(yHat);
-          if (i === 0) ctx.moveTo(x, y);
-          else ctx.lineTo(x, y);
-        }
-        ctx.stroke();
-
-        r2El.textContent = fit.r2.toFixed(3);
+        const f = fitR2(data); c.strokeStyle = "#e76f51"; c.lineWidth = 1.5; c.beginPath();
+        for (let i = 0; i < data.length; i++) { const x = (w * i) / dx, y = ypx(f.m * i + f.b); i ? c.lineTo(x, y) : c.moveTo(x, y); }
+        c.stroke(); eR2.textContent = f.r2.toFixed(3);
       }
+
+      function status(text, good) { eSt.textContent = text; eSt.className = "v " + (good ? "ok" : "bad"); }
 
       async function tick() {
+        if (busy) return; busy = 1;
         try {
-          const r = await fetch("/metrics", { cache: "no-store" });
-          const j = await r.json();
-
-          if (!j.ok) {
-            statusEl.textContent = "error: " + (j.error || "sin lectura");
-            return;
+          const r = await fetch("/metrics", { cache: "no-store" }), j = await r.json();
+          if (!j.ok) status("error", 0);
+          else {
+            status("ok", 1);
+            eDist.textContent = (+j.distance_cm).toFixed(2);
+            data.push(+j.distance_cm); if (data.length > MAX) data.shift();
+            draw();
           }
-
-          statusEl.textContent = "ok";
-          distanceEl.textContent = j.distance_cm.toFixed(2);
-
-          data.push(j.distance_cm);
-          if (data.length > N) data.shift();
-
-          draw();
-        } catch (err) {
-          statusEl.textContent = "sin conexión";
-        }
+        } catch (_) { status("sin conexión", 0); }
+        busy = 0;
       }
 
-      draw();
-      tick();
+      resize(); draw(); tick();
+      addEventListener("resize", () => { resize(); draw(); });
       setInterval(tick, 1000);
     </script>
   </body>
