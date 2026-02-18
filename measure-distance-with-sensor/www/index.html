@@ -1,0 +1,169 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>ESP32 + HC-SR04</title>
+    <style>
+      body {
+        font-family: sans-serif;
+        margin: 16px;
+      }
+      #row {
+        display: flex;
+        gap: 12px;
+        align-items: center;
+        flex-wrap: wrap;
+      }
+      .box {
+        padding: 8px 10px;
+        border: 1px solid #ddd;
+        border-radius: 8px;
+      }
+      canvas {
+        border: 1px solid #ccc;
+        width: 100%;
+        max-width: 960px;
+        height: 320px;
+      }
+    </style>
+  </head>
+  <body>
+    <h2>Distancia con HC-SR04 (ESP32)</h2>
+
+    <div id="row">
+      <div class="box">distancia: <b id="distance">-</b> cm</div>
+      <div class="box">linealidad (R²): <b id="r2">-</b></div>
+      <div class="box">estado: <b id="status">-</b></div>
+    </div>
+
+    <p></p>
+    <canvas id="cv" width="960" height="320"></canvas>
+
+    <script>
+      const cv = document.getElementById("cv");
+      const ctx = cv.getContext("2d");
+
+      const distanceEl = document.getElementById("distance");
+      const r2El = document.getElementById("r2");
+      const statusEl = document.getElementById("status");
+
+      const N = 90;
+      const data = [];
+
+      function fitLineR2(values) {
+        const n = values.length;
+        if (n < 3) return { slope: 0, intercept: 0, r2: 0 };
+
+        let sumX = 0,
+          sumY = 0,
+          sumXY = 0,
+          sumX2 = 0;
+        for (let i = 0; i < n; i++) {
+          const x = i;
+          const y = values[i];
+          sumX += x;
+          sumY += y;
+          sumXY += x * y;
+          sumX2 += x * x;
+        }
+
+        const denom = n * sumX2 - sumX * sumX;
+        const slope = denom === 0 ? 0 : (n * sumXY - sumX * sumY) / denom;
+        const intercept = (sumY - slope * sumX) / n;
+
+        const meanY = sumY / n;
+        let ssRes = 0,
+          ssTot = 0;
+        for (let i = 0; i < n; i++) {
+          const y = values[i];
+          const yHat = slope * i + intercept;
+          ssRes += (y - yHat) * (y - yHat);
+          ssTot += (y - meanY) * (y - meanY);
+        }
+
+        const r2 = ssTot === 0 ? 1 : 1 - ssRes / ssTot;
+        return { slope, intercept, r2 };
+      }
+
+      function draw() {
+        ctx.clearRect(0, 0, cv.width, cv.height);
+
+        if (data.length === 0) return;
+
+        const minY = Math.min(...data);
+        const maxY = Math.max(...data);
+        const pad = Math.max(3, (maxY - minY) * 0.15);
+        const y0 = minY - pad;
+        const y1 = maxY + pad;
+
+        const yToPx = (y) => {
+          if (y1 === y0) return cv.height / 2;
+          return cv.height - ((y - y0) / (y1 - y0)) * cv.height;
+        };
+
+        ctx.globalAlpha = 0.25;
+        for (let i = 0; i <= 8; i++) {
+          const y = (cv.height * i) / 8;
+          ctx.beginPath();
+          ctx.moveTo(0, y);
+          ctx.lineTo(cv.width, y);
+          ctx.stroke();
+        }
+        ctx.globalAlpha = 1;
+
+        ctx.strokeStyle = "#0a66c2";
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        for (let i = 0; i < data.length; i++) {
+          const x = (cv.width * i) / Math.max(1, data.length - 1);
+          const y = yToPx(data[i]);
+          if (i === 0) ctx.moveTo(x, y);
+          else ctx.lineTo(x, y);
+        }
+        ctx.stroke();
+
+        const fit = fitLineR2(data);
+        ctx.strokeStyle = "#e67e22";
+        ctx.lineWidth = 1.5;
+        ctx.beginPath();
+        for (let i = 0; i < data.length; i++) {
+          const x = (cv.width * i) / Math.max(1, data.length - 1);
+          const yHat = fit.slope * i + fit.intercept;
+          const y = yToPx(yHat);
+          if (i === 0) ctx.moveTo(x, y);
+          else ctx.lineTo(x, y);
+        }
+        ctx.stroke();
+
+        r2El.textContent = fit.r2.toFixed(3);
+      }
+
+      async function tick() {
+        try {
+          const r = await fetch("/metrics", { cache: "no-store" });
+          const j = await r.json();
+
+          if (!j.ok) {
+            statusEl.textContent = "error: " + (j.error || "sin lectura");
+            return;
+          }
+
+          statusEl.textContent = "ok";
+          distanceEl.textContent = j.distance_cm.toFixed(2);
+
+          data.push(j.distance_cm);
+          if (data.length > N) data.shift();
+
+          draw();
+        } catch (err) {
+          statusEl.textContent = "sin conexión";
+        }
+      }
+
+      draw();
+      tick();
+      setInterval(tick, 1000);
+    </script>
+  </body>
+</html>
